@@ -107,13 +107,15 @@ def get_week_range(d: date):
 
 
 def compute_pending_pay():
+    
     df = st.session_state.work_log
 
-    # FIX: ensure 'paid' column always exists
-    if "paid" not in df.columns:
+    # FIX: if DataFrame is empty or missing 'paid' column
+    if df.empty or "paid" not in df.columns:
         return 0.0
-    if df.empty:
-        return 0.0
+
+    # FIX: ensure no NaN values in 'paid'
+    df["paid"] = df["paid"].fillna(False)
 
     return float(df.loc[~df["paid"], "earnings"].sum())
 
