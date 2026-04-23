@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudentPay — Work & Money Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --pu:#7F77DD;--pu-d:#534AB7;--pu-l:#EEEDFE;--pu-t:#3C3489;
+  --te:#1D9E75;--te-d:#0F6E56;--te-l:#E1F5EE;
+  --am:#EF9F27;--am-d:#BA7517;
+  --re:#E24B4A;--re-d:#A32D2D;
+  --bg:#0c0c18;--bg2:#13131f;--bg3:#1a1a2e;
+  --card:#1c1c2e;--card2:#232338;
+  --txt:#e8e8ff;--txt2:#9898c0;--txt3:#55557a;
+  --bord:rgba(127,119,221,0.18);--bord2:rgba(127,119,221,0.35);
+  --font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+html{background:var(--bg);color:var(--txt);font-family:var(--font-body);font-size:14px;line-height:1.6;min-height:100vh}
+body{max-width:760px;margin:0 auto;padding:16px}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:var(--card);border-radius:16px;border:1px solid var(--bord);margin-bottom:16px}
+.logo{font-family:var(--font-head);font-size:20px;font-weight:700;background:linear-gradient(135deg,var(--pu) 0%,var(--te) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:-.02em}
+.api-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--txt3)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--txt3);transition:background .3s}
+.status-dot.online{background:var(--te);box-shadow:0 0 6px var(--te)}
+.status-dot.error{background:var(--re)}
+.tabs{display:flex;gap:3px;background:var(--bg2);border-radius:10px;padding:3px}
+.tab{padding:6px 14px;border-radius:7px;border:none;background:transparent;color:var(--txt3);cursor:pointer;font-family:var(--font-body);font-size:12px;font-weight:500;transition:all .2s;letter-spacing:.01em}
+.tab.active{background:var(--pu-d);color:#fff}
+.tab:hover:not(.active){color:var(--txt2)}
+
+/* ── BALANCE BAR ── */
+.balance-bar{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.metric{background:var(--card);border-radius:14px;padding:14px 16px;border:1px solid var(--bord);position:relative;overflow:hidden}
+.metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:14px 14px 0 0}
+.metric.green::before{background:linear-gradient(90deg,var(--te),transparent)}
+.metric.purple::before{background:linear-gradient(90deg,var(--pu),transparent)}
+.metric.amber::before{background:linear-gradient(90deg,var(--am),transparent)}
+.metric label{font-size:10px;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:5px;font-family:var(--font-head)}
+.metric .val{font-size:22px;font-weight:600;font-family:var(--font-head);letter-spacing:-.02em}
+.metric .val.green{color:var(--te)}
+.metric .val.amber{color:var(--am)}
+.metric .val.red{color:var(--re)}
+.metric .val.purple{color:var(--pu)}
+
+/* ── SECTIONS ── */
+.section{display:none}.section.active{display:block}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:16px;border:1px solid var(--bord);padding:16px;margin-bottom:12px}
+.card-title{font-family:var(--font-head);font-size:13px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px}
+
+/* ── CALENDAR ── */
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-month{font-family:var(--font-head);font-size:17px;font-weight:700;color:var(--txt);letter-spacing:-.01em}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-head{text-align:center;font-size:10px;color:var(--txt3);padding:4px 0;font-family:var(--font-head);letter-spacing:.05em}
+.cal-day{background:var(--bg2);border-radius:9px;min-height:54px;padding:5px;cursor:pointer;border:1px solid transparent;transition:all .15s;position:relative}
+.cal-day:hover{border-color:var(--bord2);background:var(--card2)}
+.cal-day.today{border-color:var(--te)!important;background:rgba(29,158,117,.08)}
+.cal-day.has-work{background:rgba(127,119,221,.08)}
+.cal-day.selected{border-color:var(--pu)!important;background:rgba(127,119,221,.12)}
+.cal-day.other-month{opacity:.25;pointer-events:none}
+.day-num{font-size:11px;color:var(--txt2);font-weight:600;font-family:var(--font-head)}
+.day-hrs{font-size:10px;color:var(--pu);font-weight:500;margin-top:2px}
+.day-dot{width:4px;height:4px;border-radius:50%;background:var(--pu);margin:2px auto 0}
+.day-add{position:absolute;bottom:4px;right:4px;width:17px;height:17px;border-radius:5px;background:var(--pu-d);color:#fff;font-size:13px;line-height:17px;text-align:center;opacity:0;transition:opacity .15s;border:none;cursor:pointer}
+.cal-day:hover .day-add{opacity:1}
+
+/* ── ENTRY FORM ── */
+.entry-form{background:var(--card2);border-radius:12px;padding:14px;margin-top:10px;border:1px solid var(--pu);animation:slideDown .2s ease}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.entry-form-title{font-family:var(--font-head);font-size:13px;color:var(--pu);font-weight:600;margin-bottom:10px}
+
+/* ── INPUTS ── */
+input,textarea,select{background:var(--bg3);border:1px solid var(--bord);border-radius:9px;color:var(--txt);padding:9px 12px;font-size:13px;font-family:var(--font-body);width:100%;outline:none;transition:border .15s}
+input:focus,textarea:focus{border-color:var(--pu)}
+input::placeholder{color:var(--txt3)}
+textarea{resize:none;height:48px}
+.input-row{display:flex;gap:8px;margin-bottom:8px}
+.input-row>*{flex:1}
+
+/* ── BUTTONS ── */
+.btn{padding:8px 16px;border-radius:9px;border:none;cursor:pointer;font-size:13px;font-weight:500;font-family:var(--font-body);transition:all .15s;letter-spacing:.01em}
+.btn:active{transform:scale(.97)}
+.btn-pu{background:var(--pu-d);color:#fff}.btn-pu:hover{background:var(--pu-t)}
+.btn-te{background:var(--te-d);color:#fff}.btn-te:hover{background:var(--te-t)}
+.btn-re{background:var(--re-d);color:#fff}
+.btn-am{background:var(--am-d);color:#fff}
+.btn-ghost{background:transparent;border:1px solid var(--bord);color:var(--txt2)}.btn-ghost:hover{border-color:var(--pu);color:var(--pu)}
+.btn-sm{padding:6px 12px;font-size:12px;border-radius:7px}
+.btn-full{width:100%;padding:11px}
+.btn-row{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+
+/* ── WEEKLY SUMMARY ── */
+.week-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+.week-metric{background:var(--bg2);border-radius:10px;padding:10px 12px}
+.week-metric label{font-size:10px;color:var(--txt3);display:block;margin-bottom:3px;font-family:var(--font-head);text-transform:uppercase;letter-spacing:.05em}
+.week-metric .num{font-size:19px;font-weight:600;font-family:var(--font-head)}
+.progress-track{height:6px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-top:8px}
+.progress-fill{height:100%;border-radius:3px;transition:width .4s,background .3s}
+.warn-bar{background:rgba(226,75,74,.1);border:1px solid rgba(226,75,74,.4);border-radius:8px;padding:9px 12px;color:var(--re);font-size:12px;margin-top:10px;display:none;font-weight:500}
+.warn-bar.show{display:block}
+
+/* ── EXPENSE GRID ── */
+.exp-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:12px}
+.exp-cat{padding:10px 6px;background:var(--bg2);border:1px solid var(--bord);border-radius:11px;color:var(--txt3);cursor:pointer;text-align:center;font-size:12px;font-weight:500;transition:all .15s;font-family:var(--font-body)}
+.exp-cat:hover{border-color:var(--bord2);color:var(--txt)}
+.exp-cat.active{border-color:var(--pu);background:rgba(127,119,221,.12);color:var(--pu)}
+.exp-cat .icon{font-size:20px;display:block;margin-bottom:3px}
+.exp-form-inner{background:var(--bg3);border-radius:10px;padding:12px;border:1px solid var(--bord);animation:slideDown .2s ease;display:none}
+.exp-form-label{font-size:13px;color:var(--pu);font-weight:600;font-family:var(--font-head);margin-bottom:10px}
+
+/* ── LOG LIST ── */
+.log-list{max-height:240px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--bord) transparent}
+.log-item{display:flex;justify-content:space-between;align-items:center;padding:9px 11px;border-radius:9px;margin-bottom:4px;background:var(--bg2);transition:background .15s}
+.log-item:hover{background:var(--card2)}
+.log-date{font-size:10px;color:var(--txt3);font-family:var(--font-head)}
+.log-desc{font-size:12px;color:var(--txt);margin-top:1px}
+.log-amt{font-weight:600;font-family:var(--font-head);font-size:13px}
+.log-amt.pos{color:var(--te)}.log-amt.neg{color:var(--re)}
+.badge{font-size:10px;padding:2px 7px;border-radius:4px;font-family:var(--font-head);font-weight:600;margin-top:3px;display:inline-block}
+.badge-paid{background:rgba(29,158,117,.2);color:var(--te)}
+.badge-unpaid{background:rgba(127,119,221,.2);color:var(--pu)}
+.badge-rent{background:rgba(239,159,39,.2);color:var(--am)}
+.empty-state{color:var(--txt3);font-size:12px;text-align:center;padding:20px;font-style:italic}
+
+/* ── PAY TAB ── */
+.pay-info-row{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--bg2);border-radius:9px;margin-bottom:10px}
+.pay-info-label{font-size:13px;color:var(--txt2)}
+.pay-info-val{font-weight:600;font-family:var(--font-head);color:var(--pu);font-size:15px}
+
+/* ── SETTINGS ── */
+.setting-row{display:flex;gap:8px;align-items:center;margin-bottom:12px}
+.setting-row>input{flex:1}
+.setting-desc{font-size:11px;color:var(--txt3);margin-top:4px}
+.setting-current{font-size:12px;color:var(--txt2);margin-top:5px;padding:6px 10px;background:var(--bg2);border-radius:7px}
+
+/* ── LOADING ── */
+.loading-overlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;transition:opacity .4s}
+.loading-overlay.hidden{opacity:0;pointer-events:none}
+.loading-logo{font-family:var(--font-head);font-size:32px;font-weight:700;background:linear-gradient(135deg,var(--pu),var(--te));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin-bottom:12px}
+.loading-bar{width:160px;height:3px;background:var(--bg2);border-radius:2px;overflow:hidden}
+.loading-fill{height:100%;background:linear-gradient(90deg,var(--pu),var(--te));border-radius:2px;animation:loadPulse 1.2s ease infinite}
+@keyframes loadPulse{0%{width:0%}50%{width:70%}100%{width:100%}}
+.loading-msg{font-size:12px;color:var(--txt3);margin-top:10px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--card2);border:1px solid var(--bord2);border-radius:10px;padding:10px 20px;font-size:13px;color:var(--txt);transition:transform .3s;z-index:200;white-space:nowrap;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:var(--te);color:var(--te)}
+.toast.error{border-color:var(--re);color:var(--re)}
+
+/* ── DIVIDER ── */
+.divider{height:1px;background:var(--bord);margin:12px 0}
+
+/* ── RESPONSIVE ── */
+@media(max-width:520px){
+  .balance-bar{grid-template-columns:1fr 1fr}
+  .metric:last-child{grid-column:span 2}
+  .tabs .tab{padding:5px 9px;font-size:11px}
+  .exp-cats{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loading">
+  <div class="loading-logo">StudentPay</div>
+  <div class="loading-bar"><div class="loading-fill"></div></div>
+  <div class="loading-msg" id="loading-msg">Connecting to backend...</div>
+</div>
+
+<!-- Toast notifications -->
+<div class="toast" id="toast"></div>
+
+<!-- App -->
+<div class="topbar">
+  <div class="logo">StudentPay</div>
+  <div style="display:flex;align-items:center;gap:14px">
+    <div class="api-status"><div class="status-dot" id="status-dot"></div><span id="status-text">Connecting</span></div>
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('calendar')">Calendar</button>
+      <button class="tab" onclick="switchTab('expenses')">Expenses</button>
+      <button class="tab" onclick="switchTab('pay')">Pay</button>
+      <button class="tab" onclick="switchTab('settings')">Settings</button>
+    </div>
+  </div>
+</div>
+
+<div class="balance-bar">
+  <div class="metric green"><label>Current Balance</label><div class="val green" id="bal-display">£—</div></div>
+  <div class="metric purple"><label>Unpaid Earnings</label><div class="val purple" id="unpaid-display">£—</div></div>
+  <div class="metric amber"><label>This Month Expenses</label><div class="val amber" id="exp-display">£—</div></div>
+</div>
+
+<!-- CALENDAR -->
+<div class="section active" id="sec-calendar">
+  <div class="card">
+    <div class="cal-nav">
+      <button class="btn btn-ghost btn-sm" onclick="changeMonth(-1)">← Prev</button>
+      <span class="cal-month" id="cal-month-title"></span>
+      <button class="btn btn-ghost btn-sm" onclick="changeMonth(1)">Next →</button>
+    </div>
+    <div class="cal-grid">
+      <div class="cal-head">MON</div><div class="cal-head">TUE</div><div class="cal-head">WED</div>
+      <div class="cal-head">THU</div><div class="cal-head">FRI</div><div class="cal-head">SAT</div><div class="cal-head">SUN</div>
+    </div>
+    <div class="cal-grid" id="cal-grid" style="margin-top:3px"></div>
+  </div>
+
+  <div class="entry-form" id="entry-form" style="display:none">
+    <div class="entry-form-title" id="entry-form-title">Add Work Entry</div>
+    <div class="input-row">
+      <input type="number" id="ef-hours" placeholder="Hours worked" min="0.5" max="24" step="0.5">
+      <input type="text" id="ef-desc" placeholder="Description (optional)">
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost btn-sm" onclick="closeEntryForm()">Cancel</button>
+      <button class="btn btn-pu btn-sm" onclick="saveWorkEntry()">Save Entry</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">This Week (Mon – Sun)</div>
+    <div class="week-grid">
+      <div class="week-metric"><label>Hours Worked</label><div class="num" id="wk-hours" style="color:var(--pu)">—</div></div>
+      <div class="week-metric"><label>Hours Remaining</label><div class="num" id="wk-remain" style="color:var(--te)">—</div></div>
+      <div class="week-metric"><label>Earnings This Week</label><div class="num" id="wk-earn" style="color:var(--txt)">—</div></div>
+      <div class="week-metric"><label>Weekly Limit</label><div class="num" style="color:var(--txt3)">20 hrs</div></div>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="wk-bar" style="width:0%;background:var(--pu)"></div></div>
+    <div class="warn-bar" id="wk-warn">⚠ You have exceeded the 20-hour weekly work limit!</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Work Log</div>
+    <div class="log-list" id="work-log-list"><div class="empty-state">No entries yet — click a day to log hours.</div></div>
+  </div>
+</div>
+
+<!-- EXPENSES -->
+<div class="section" id="sec-expenses">
+  <div class="card">
+    <div class="card-title">Quick Add Expense</div>
+    <div class="exp-cats">
+      <button class="exp-cat" onclick="selectExpCat('Travel')"><span class="icon">🚌</span>Travel</button>
+      <button class="exp-cat" onclick="selectExpCat('Grocery')"><span class="icon">🛒</span>Grocery</button>
+      <button class="exp-cat" onclick="selectExpCat('Food')"><span class="icon">🍜</span>Food</button>
+      <button class="exp-cat" onclick="selectExpCat('Shopping')"><span class="icon">🛍</span>Shopping</button>
+      <button class="exp-cat" onclick="selectExpCat('Bills')"><span class="icon">📄</span>Bills</button>
+      <button class="exp-cat" onclick="selectExpCat('Other')"><span class="icon">💸</span>Other</button>
+    </div>
+    <div class="exp-form-inner" id="exp-form">
+      <div class="exp-form-label" id="exp-cat-label">Category</div>
+      <div class="input-row">
+        <input type="number" id="exp-amount" placeholder="Amount (£)" min="0.01" step="0.01">
+        <input type="text" id="exp-desc" placeholder="Description (optional)">
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-sm" onclick="cancelExp()">Cancel</button>
+        <button class="btn btn-re btn-sm" onclick="saveExpense()">Deduct Now</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Expense Log</div>
+    <div class="log-list" id="exp-log-list"><div class="empty-state">No expenses yet.</div></div>
+  </div>
+</div>
+
+<!-- PAY & RENT -->
+<div class="section" id="sec-pay">
+  <div class="card">
+    <div class="card-title">Receive Monthly Pay</div>
+    <p style="font-size:12px;color:var(--txt2);margin-bottom:12px">Credits all unpaid work entries from last month to your balance.</p>
+    <div class="pay-info-row">
+      <span class="pay-info-label">Unpaid earnings ready:</span>
+      <span class="pay-info-val" id="pay-ready">£0.00</span>
+    </div>
+    <button class="btn btn-te btn-full" onclick="receiveLastMonthPay()">Receive Last Month's Pay</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Rent Management</div>
+    <div class="pay-info-row">
+      <span class="pay-info-label">Monthly rent amount:</span>
+      <span class="pay-info-val" id="rent-display">Not set</span>
+    </div>
+    <p style="font-size:12px;color:var(--txt3);margin-bottom:12px">Protected against double-charging — can only apply once per calendar month.</p>
+    <button class="btn btn-am btn-full" id="rent-btn" onclick="applyRent()">Apply This Month's Rent</button>
+    <div style="font-size:11px;color:var(--txt3);margin-top:8px;text-align:center" id="rent-status"></div>
+  </div>
+  <div class="card">
+    <div class="card-title">Transaction History</div>
+    <div class="log-list" id="pay-log-list"><div class="empty-state">No transactions yet.</div></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="section" id="sec-settings">
+  <div class="card">
+    <div class="card-title">Starting Balance</div>
+    <div class="setting-row">
+      <input type="number" id="set-balance" placeholder="e.g. 1500.00" step="0.01">
+      <button class="btn btn-pu btn-sm" onclick="setStartingBalance()">Set</button>
+    </div>
+    <div class="setting-current" id="bal-setting-display">Current balance: —</div>
+    <div class="setting-desc">Resets your current balance to this value. Use at setup or to manually correct.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Hourly Pay Rate</div>
+    <div class="setting-row">
+      <input type="number" id="set-hourly" placeholder="e.g. 11.44" step="0.01">
+      <button class="btn btn-pu btn-sm" onclick="setHourlyPay()">Set</button>
+    </div>
+    <div class="setting-current" id="hourly-display">Current rate: —</div>
+    <div class="setting-desc">UK minimum wage 2025: £12.21/hr (21+), £10.00/hr (18–20).</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Monthly Rent</div>
+    <div class="setting-row">
+      <input type="number" id="set-rent" placeholder="e.g. 650.00" step="0.01">
+      <button class="btn btn-pu btn-sm" onclick="setRent()">Set</button>
+    </div>
+    <div class="setting-current" id="rent-setting-display">Current rent: —</div>
+  </div>
+  <div class="card">
+    <div class="card-title">API Connection</div>
+    <div class="setting-row">
+      <input type="text" id="set-api-url" placeholder="http://localhost:8000">
+      <button class="btn btn-ghost btn-sm" onclick="setApiUrl()">Save</button>
+    </div>
+    <div class="setting-current" id="api-url-display"></div>
+    <div class="setting-desc">Default: http://localhost:8000 — change if your backend runs elsewhere.</div>
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+let API = localStorage.getItem('api_url') || 'http://localhost:8000';
+const CAT_ICONS = {Travel:'🚌',Grocery:'🛒',Food:'🍜',Shopping:'🛍',Bills:'📄',Other:'💸'};
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let state = {
+  settings: { hourly_pay:0, current_balance:0, rent:0, rent_paid_months:[] },
+  workLog: [],
+  expenseLog: [],
+  payLog: [],
+  viewYear: new Date().getFullYear(),
+  viewMonth: new Date().getMonth(),
+  selectedDate: null,
+  selectedExpCat: null,
+};
+
+// ─── API HELPERS ─────────────────────────────────────────────────────────────
+async function apiFetch(path, options={}) {
+  const res = await fetch(`${API}/api${path}`, {
+    headers: { 'Content-Type': 'application/json' },
+    ...options,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Unknown error' }));
+    throw new Error(err.detail || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function fmt(n) { return '£' + Math.abs(n).toFixed(2); }
+function fmtDate(d) { return new Date(d + 'T00:00:00').toLocaleDateString('en-GB', { day:'2-digit', month:'short', year:'numeric' }); }
+
+// ─── TOAST ───────────────────────────────────────────────────────────────────
+let toastTimer;
+function toast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ─── STATUS ──────────────────────────────────────────────────────────────────
+function setStatus(online) {
+  document.getElementById('status-dot').className = 'status-dot ' + (online ? 'online' : 'error');
+  document.getElementById('status-text').textContent = online ? 'Connected' : 'Offline';
+}
+
+// ─── LOAD ALL ────────────────────────────────────────────────────────────────
+async function loadAll() {
+  try {
+    const month = `${state.viewYear}-${String(state.viewMonth + 1).padStart(2, '0')}`;
+    const [settings, entries, expenses, weekly] = await Promise.all([
+      apiFetch('/settings'),
+      apiFetch(`/work-entries?month=${month}`),
+      apiFetch('/expenses'),
+      apiFetch(`/weekly-summary?date=${new Date().toISOString().slice(0,10)}`),
+    ]);
+    state.settings = settings;
+    state.workLog = entries;
+    state.expenseLog = expenses;
+    state.weekly = weekly;
+    setStatus(true);
+    renderAll();
+  } catch (e) {
+    setStatus(false);
+    toast('Cannot reach backend. Is it running?', 'error');
+    renderAll();
+  }
+}
+
+// ─── RENDER ALL ──────────────────────────────────────────────────────────────
+function renderAll() {
+  renderHeader();
+  renderCal();
+  renderWeekly();
+  renderWorkLog();
+  renderExpLog();
+  renderPayTab();
+  renderSettings();
+}
+
+// ─── HEADER ──────────────────────────────────────────────────────────────────
+function renderHeader() {
+  const { current_balance } = state.settings;
+  const unpaid = state.workLog.filter(e => !e.paid).reduce((a, e) => a + e.earnings, 0);
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  const monthExp = state.expenseLog.filter(e => e.date.startsWith(ym)).reduce((a, e) => a + e.amount, 0);
+
+  const balEl = document.getElementById('bal-display');
+  balEl.textContent = fmt(current_balance);
+  balEl.className = 'val ' + (current_balance < 0 ? 'red' : current_balance < 100 ? 'amber' : 'green');
+  document.getElementById('unpaid-display').textContent = fmt(unpaid);
+  document.getElementById('exp-display').textContent = fmt(monthExp);
+  document.getElementById('pay-ready').textContent = fmt(unpaid);
+}
+
+// ─── CALENDAR ────────────────────────────────────────────────────────────────
+function renderCal() {
+  const y = state.viewYear, m = state.viewMonth;
+  document.getElementById('cal-month-title').textContent = `${MONTHS[m]} ${y}`;
+  const first = new Date(y, m, 1);
+  let dow = first.getDay(); if (dow === 0) dow = 7;
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const totalCells = Math.ceil((dow - 1 + daysInMonth) / 7) * 7;
+
+  for (let i = 0; i < totalCells; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cal-day';
+    let dayNum, dateStr, otherMonth = false;
+
+    if (i < dow - 1) {
+      dayNum = prevDays - (dow - 2 - i);
+      const pm = m === 0 ? 11 : m-1, py = m === 0 ? y-1 : y;
+      dateStr = `${py}-${String(pm+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      otherMonth = true;
+    } else {
+      dayNum = i - (dow - 1) + 1;
+      if (dayNum > daysInMonth) {
+        dayNum -= daysInMonth;
+        const nm = m === 11 ? 0 : m+1, ny = m === 11 ? y+1 : y;
+        dateStr = `${ny}-${String(nm+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+        otherMonth = true;
+      } else {
+        dateStr = `${y}-${String(m+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
+      }
+    }
+
+    if (otherMonth) cell.classList.add('other-month');
+    if (dateStr === todayStr) cell.classList.add('today');
+    if (dateStr === state.selectedDate) cell.classList.add('selected');
+
+    const entries = state.workLog.filter(e => e.date === dateStr);
+    const totalHrs = entries.reduce((a, e) => a + e.hours, 0);
+    if (entries.length) cell.classList.add('has-work');
+
+    cell.innerHTML = `<div class="day-num">${dayNum}</div>${totalHrs > 0 ? `<div class="day-hrs">${totalHrs}h</div><div class="day-dot"></div>` : ''}`;
+
+    if (!otherMonth) {
+      const addBtn = document.createElement('button');
+      addBtn.className = 'day-add'; addBtn.textContent = '+';
+      addBtn.onclick = e => { e.stopPropagation(); openEntry(dateStr); };
+      cell.appendChild(addBtn);
+      cell.onclick = () => openEntry(dateStr);
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function changeMonth(d) {
+  state.viewMonth += d;
+  if (state.viewMonth > 11) { state.viewMonth = 0; state.viewYear++; }
+  if (state.viewMonth < 0) { state.viewMonth = 11; state.viewYear--; }
+  loadAll();
+}
+
+function openEntry(dateStr) {
+  state.selectedDate = dateStr;
+  renderCal();
+  const form = document.getElementById('entry-form');
+  form.style.display = 'block';
+  document.getElementById('entry-form-title').textContent = `Add Work — ${fmtDate(dateStr)}`;
+  document.getElementById('ef-hours').value = '';
+  document.getElementById('ef-desc').value = '';
+  form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function closeEntryForm() {
+  document.getElementById('entry-form').style.display = 'none';
+  state.selectedDate = null;
+  renderCal();
+}
+
+async function saveWorkEntry() {
+  const hours = parseFloat(document.getElementById('ef-hours').value);
+  const description = document.getElementById('ef-desc').value.trim();
+  if (!hours || hours <= 0) { toast('Enter valid hours', 'error'); return; }
+  try {
+    await apiFetch('/work-entry', {
+      method: 'POST',
+      body: JSON.stringify({ date: state.selectedDate, hours, description }),
+    });
+    closeEntryForm();
+    toast(`Logged ${hours}h on ${fmtDate(state.selectedDate || '')}`, 'success');
+    await loadAll();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ─── WEEKLY SUMMARY ──────────────────────────────────────────────────────────
+function renderWeekly() {
+  const s = state.weekly;
+  if (!s) return;
+  const pct = Math.min(100, (s.total_hours / 20) * 100);
+  document.getElementById('wk-hours').textContent = s.total_hours.toFixed(1) + 'h';
+  document.getElementById('wk-hours').style.color = s.over_limit ? 'var(--re)' : s.total_hours > 15 ? 'var(--am)' : 'var(--pu)';
+  document.getElementById('wk-remain').textContent = s.hours_remaining.toFixed(1) + 'h left';
+  document.getElementById('wk-remain').style.color = s.hours_remaining < 5 ? 'var(--re)' : s.hours_remaining < 10 ? 'var(--am)' : 'var(--te)';
+  document.getElementById('wk-earn').textContent = fmt(s.total_earnings);
+  document.getElementById('wk-bar').style.width = pct + '%';
+  document.getElementById('wk-bar').style.background = s.over_limit ? '#E24B4A' : s.total_hours > 15 ? '#EF9F27' : '#7F77DD';
+  document.getElementById('wk-warn').className = 'warn-bar' + (s.over_limit ? ' show' : '');
+}
+
+// ─── WORK LOG ────────────────────────────────────────────────────────────────
+function renderWorkLog() {
+  const list = document.getElementById('work-log-list');
+  if (!state.workLog.length) {
+    list.innerHTML = '<div class="empty-state">No entries yet — click a day to log hours.</div>';
+    return;
+  }
+  list.innerHTML = [...state.workLog]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(e => `
+      <div class="log-item">
+        <div>
+          <div class="log-date">${fmtDate(e.date)}</div>
+          <div class="log-desc">${e.description || 'Work shift'}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="log-amt pos">+${fmt(e.earnings)}</div>
+          <div style="font-size:11px;color:var(--txt3)">${e.hours}h</div>
+          <span class="badge ${e.paid ? 'badge-paid' : 'badge-unpaid'}">${e.paid ? 'Paid' : 'Unpaid'}</span>
+        </div>
+      </div>`).join('');
+}
+
+// ─── EXPENSES ────────────────────────────────────────────────────────────────
+function selectExpCat(cat) {
+  state.selectedExpCat = cat;
+  document.querySelectorAll('.exp-cat').forEach(b => b.classList.toggle('active', b.textContent.trim().endsWith(cat)));
+  const form = document.getElementById('exp-form');
+  form.style.display = 'block';
+  document.getElementById('exp-cat-label').textContent = `${CAT_ICONS[cat] || ''} ${cat}`;
+  document.getElementById('exp-amount').value = '';
+  document.getElementById('exp-desc').value = '';
+}
+
+function cancelExp() {
+  state.selectedExpCat = null;
+  document.getElementById('exp-form').style.display = 'none';
+  document.querySelectorAll('.exp-cat').forEach(b => b.classList.remove('active'));
+}
+
+async function saveExpense() {
+  if (!state.selectedExpCat) return;
+  const amount = parseFloat(document.getElementById('exp-amount').value);
+  const description = document.getElementById('exp-desc').value.trim();
+  if (!amount || amount <= 0) { toast('Enter a valid amount', 'error'); return; }
+  try {
+    await apiFetch('/expense', {
+      method: 'POST',
+      body: JSON.stringify({ category: state.selectedExpCat, amount, description }),
+    });
+    cancelExp();
+    toast(`-${fmt(amount)} deducted for ${state.selectedExpCat || ''}`, 'success');
+    await loadAll();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+function renderExpLog() {
+  const list = document.getElementById('exp-log-list');
+  if (!state.expenseLog.length) {
+    list.innerHTML = '<div class="empty-state">No expenses yet.</div>';
+    return;
+  }
+  list.innerHTML = [...state.expenseLog]
+    .sort((a, b) => b.date.localeCompare(a.date))
+    .map(e => `
+      <div class="log-item">
+        <div>
+          <div class="log-date">${fmtDate(e.date)}</div>
+          <div class="log-desc">${CAT_ICONS[e.category] || ''} ${e.category}${e.description ? ' — ' + e.description : ''}</div>
+        </div>
+        <div class="log-amt neg">-${fmt(e.amount)}</div>
+      </div>`).join('');
+}
+
+// ─── PAY & RENT ──────────────────────────────────────────────────────────────
+function renderPayTab() {
+  const s = state.settings;
+  document.getElementById('rent-display').textContent = s.rent > 0 ? fmt(s.rent) + '/mo' : 'Not set';
+  const now = new Date();
+  const mk = `${now.getFullYear()}-${now.getMonth() + 1}`;
+  const paid = Array.isArray(s.rent_paid_months) && s.rent_paid_months.includes(mk);
+  const rentBtn = document.getElementById('rent-btn');
+  rentBtn.disabled = paid || !s.rent;
+  rentBtn.style.opacity = (paid || !s.rent) ? '.5' : '1';
+  document.getElementById('rent-status').textContent = paid
+    ? `Rent already applied for ${now.toLocaleDateString('en-GB', { month:'long', year:'numeric' })}.`
+    : (!s.rent ? 'Set a rent amount in Settings first.' : '');
+
+  // Build pay log from work entries + any rent/pay events inferred
+  const payItems = [];
+  state.workLog.filter(e => e.paid).forEach(e => {
+    payItems.push({ date: e.date, label: `Pay for ${fmtDate(e.date)} (${e.hours}h)`, amt: e.earnings, type: 'income' });
+  });
+
+  const logEl = document.getElementById('pay-log-list');
+  if (!payItems.length) {
+    logEl.innerHTML = '<div class="empty-state">No paid transactions yet.</div>';
+    return;
+  }
+  payItems.sort((a, b) => b.date.localeCompare(a.date));
+  logEl.innerHTML = payItems.map(p => `
+    <div class="log-item">
+      <div><div class="log-date">${fmtDate(p.date)}</div><div class="log-desc">${p.label}</div></div>
+      <div style="text-align:right"><div class="log-amt pos">+${fmt(p.amt)}</div><span class="badge badge-paid">Paid</span></div>
+    </div>`).join('');
+}
+
+async function receiveLastMonthPay() {
+  try {
+    const result = await apiFetch('/receive-last-month-pay', { method: 'POST' });
+    toast(result.message, result.entries_paid > 0 ? 'success' : '');
+    await loadAll();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+async function applyRent() {
+  try {
+    const result = await apiFetch('/settings/apply-rent', { method: 'POST' });
+    toast(result.message, 'success');
+    await loadAll();
+  } catch (e) {
+    toast(e.message, 'error');
+  }
+}
+
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function renderSettings() {
+  const s = state.settings;
+  document.getElementById('hourly-display').textContent = s.hourly_pay > 0 ? `Current: £${s.hourly_pay.toFixed(2)}/hr` : 'Not set';
+  document.getElementById('rent-setting-display').textContent = s.rent > 0 ? `Current: £${s.rent.toFixed(2)}/month` : 'Not set';
+  document.getElementById('bal-setting-display').textContent = `Current balance: £${s.current_balance.toFixed(2)}`;
+  document.getElementById('api-url-display').textContent = `Current: ${API}`;
+  document.getElementById('set-api-url').placeholder = API;
+}
+
+async function setHourlyPay() {
+  const v = parseFloat(document.getElementById('set-hourly').value);
+  if (!v || v <= 0) { toast('Enter a valid rate', 'error'); return; }
+  try {
+    await apiFetch('/settings/hourly-pay', { method: 'POST', body: JSON.stringify({ hourly_pay: v }) });
+    document.getElementById('set-hourly').value = '';
+    toast(`Hourly pay set to £${v.toFixed(2)}/hr`, 'success');
+    await loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function setRent() {
+  const v = parseFloat(document.getElementById('set-rent').value);
+  if (isNaN(v) || v < 0) { toast('Enter a valid rent amount', 'error'); return; }
+  try {
+    await apiFetch('/settings/rent', { method: 'POST', body: JSON.stringify({ rent: v }) });
+    document.getElementById('set-rent').value = '';
+    toast(`Rent set to £${v.toFixed(2)}/month`, 'success');
+    await loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+async function setStartingBalance() {
+  const v = parseFloat(document.getElementById('set-balance').value);
+  if (isNaN(v)) { toast('Enter a valid balance', 'error'); return; }
+  try {
+    await apiFetch('/settings/starting-balance', { method: 'POST', body: JSON.stringify({ starting_balance: v }) });
+    document.getElementById('set-balance').value = '';
+    toast(`Balance set to £${v.toFixed(2)}`, 'success');
+    await loadAll();
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function setApiUrl() {
+  const v = document.getElementById('set-api-url').value.trim().replace(/\/$/, '');
+  if (!v) { toast('Enter a valid URL', 'error'); return; }
+  API = v;
+  localStorage.setItem('api_url', API);
+  toast('API URL updated — reconnecting…', 'success');
+  document.getElementById('set-api-url').value = '';
+  loadAll();
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────────────────────────
+function switchTab(t) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + t).classList.add('active');
+  event.target.classList.add('active');
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+async function init() {
+  const loadEl = document.getElementById('loading');
+  document.getElementById('loading-msg').textContent = 'Connecting to backend…';
+  try {
+    await loadAll();
+    document.getElementById('loading-msg').textContent = 'Ready!';
+    setTimeout(() => loadEl.classList.add('hidden'), 400);
+  } catch (e) {
+    document.getElementById('loading-msg').textContent = 'Backend offline — check Settings';
+    setTimeout(() => loadEl.classList.add('hidden'), 1500);
+  }
+}
+
+init();
+</script>
+</body>
+</html>
