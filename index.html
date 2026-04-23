@@ -398,7 +398,7 @@ async function loadAll() {
     const [settings, entries, expenses, weekly] = await Promise.all([
       apiFetch('/settings'),
       apiFetch(`/work-entries?month=${month}`),
-      apiFetch('/expenses'),
+      apiFetch(`/expenses?month=${month}`),
       apiFetch(`/weekly-summary?date=${new Date().toISOString().slice(0,10)}`),
     ]);
     state.settings = settings;
@@ -596,21 +596,34 @@ function cancelExp() {
 
 async function saveExpense() {
   if (!state.selectedExpCat) return;
+
   const amount = parseFloat(document.getElementById('exp-amount').value);
   const description = document.getElementById('exp-desc').value.trim();
-  if (!amount || amount <= 0) { toast('Enter a valid amount', 'error'); return; }
+
+  if (!amount || amount <= 0) {
+    toast('Enter a valid amount', 'error');
+    return;
+  }
+
   try {
-    await apiFetch('/expense', {
+    await apiFetch('/apply-expense', {
       method: 'POST',
-      body: JSON.stringify({ category: state.selectedExpCat, amount, description }),
+      body: JSON.stringify({
+        category: state.selectedExpCat,
+        amount,
+        description
+      }),
     });
+
     cancelExp();
-    toast(`-${fmt(amount)} deducted for ${state.selectedExpCat || ''}`, 'success');
+    toast(`-${fmt(amount)} deducted for ${state.selectedExpCat}${description ? ' — ' + description : ''}`, 'success');
     await loadAll();
+
   } catch (e) {
     toast(e.message, 'error');
   }
 }
+
 
 function renderExpLog() {
   const list = document.getElementById('exp-log-list');
@@ -664,9 +677,17 @@ function renderPayTab() {
 }
 
 async function receiveLastMonthPay() {
+  const now = new Date();
+  const firstThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const lastPrevMonth = new Date(firstThisMonth - 1);
+  const payUpTo = lastPrevMonth.toISOString().slice(0, 10);
+
   try {
-    const result = await apiFetch('/receive-last-month-pay', { method: 'POST' });
-    toast(result.message, result.entries_paid > 0 ? 'success' : '');
+    const result = await apiFetch('/receive-last-month-pay', {
+      method: 'POST',
+      body: JSON.stringify({ pay_up_to_date: payUpTo }),
+    });
+    toast(result.message, 'success');
     await loadAll();
   } catch (e) {
     toast(e.message, 'error');
@@ -674,14 +695,21 @@ async function receiveLastMonthPay() {
 }
 
 async function applyRent() {
+  const now = new Date();
+  const mk = `${now.getFullYear()}-${now.getMonth() + 1}`;
+
   try {
-    const result = await apiFetch('/settings/apply-rent', { method: 'POST' });
+    const result = await apiFetch('/apply-rent', {
+      method: 'POST',
+      body: JSON.stringify({ month: mk }),
+    });
     toast(result.message, 'success');
     await loadAll();
   } catch (e) {
     toast(e.message, 'error');
   }
 }
+
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
 function renderSettings() {
