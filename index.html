@@ -532,7 +532,7 @@ async function saveWorkEntry() {
       body: JSON.stringify({ date: state.selectedDate, hours, description }),
     });
     closeEntryForm();
-    toast(`Logged ${hours}h on ${fmtDate(state.selectedDate || '')}`, 'success');
+    toast(`Logged ${hours}h on ${fmtDate(new Date(state.selectedDate))}`, 'success');
     await loadAll();
   } catch (e) {
     toast(e.message, 'error');
@@ -616,7 +616,11 @@ async function saveExpense() {
     });
 
     cancelExp();
-    toast(`-${fmt(amount)} deducted for ${state.selectedExpCat}${description ? ' — ' + description : ''}`, 'success');
+const before = state.settings.current_balance;
+const after = before - amount;
+
+toast(`-${fmt(amount)} deducted from ${fmt(before)}`, 'success');
+
     await loadAll();
 
   } catch (e) {
